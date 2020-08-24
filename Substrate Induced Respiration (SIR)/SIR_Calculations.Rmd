@@ -17,7 +17,8 @@ By default, it saves to the same folder as the input files.
 The input can be csv or xlsx (note: excel files cannot run if they are open) and should be set up as follows:  
 code | sample_weight | dry_weight | density | t_1 | t_2 | t_3 | standard | peak   
 
-List the appropriate peak values under t_1-3 (t_1 is the initial reading, t_2 is two hours, and t_3 is the final reading at 4 hours). Under standard and peak put the standard concentrations and their peaks for the calibration curve  
+List the appropriate peak values under t_1-3 (t_1 is the initial reading, t_2 is two hours, and t_3 is the final reading at 4 hours). 
+Under standard and peak put the standard concentrations and their peaks for the calibration curve  
 
 Check the jar_vol (full size of an empty jar) and solution.per.g values as the top of the script
   
