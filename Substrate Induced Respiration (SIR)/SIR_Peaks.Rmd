@@ -1,0 +1,45 @@
+---
+title: "SIR_Peaks"
+author: "MaryKBrady"
+---
+
+This script pulls the peaks out of LiCor output files. The input files for the script need to be saved as txt files (as they are from the LiCor) but the script will create an 
+excel file of all the peak values at the end (called "Peak_Values_Cleaned) saved into your working directory. The columns in the output file are each named with the 
+corrosponding input file name. 
+
+*The CO2 reading in the txt file must be the 4th column! No other columns or column order really matters*
+
+The max number of peaks per input file is set at 40. Change maxSamples if you have more than 40 peaks in one file. Fewer than that is fine. 
+Set your working directory - this should be a folder with only the files you wish to run (or specify a list of file names instead of using list.file() to run only a few files).      
+The window size of 3 (in rollapply) seems to work quite well. Try adjusting only if you're getting weird results  
+If you have tiny peaks (less than 2) change the cut off for peak_values (not peak_true!). You will probably have to do some manual cleaning of the output file if you lower the 
+cut off value too much.  
+```{r}
+#install.packagges("zoo")
+#install.packages("openxlsx")
+library(zoo)
+library(openxlsx)
+
+setwd("my_data_folder")
+filelist <- list.files()  #all files in folder, can specify file names here instead of running list.files()
+maxSamples <- 40  #this can be changed (too high is fine, too low is not)
+
+all_peaks <- matrix(nrow=maxSamples)      #set up matrix for results
+for(a in filelist){
+  file_name <- a                                                #one file at a time
+  input <- read.table(file_name, header = TRUE, fill = TRUE)    #read in file
+  CO2_values <- input[,4]                                       #only want CO2 column
+  zinput<- as.zoo(CO2_values)                                   #change CO2 column to zoo object
+  peak_true <- rollapply(zinput, 3, function(x) which.max(x)==2)#find the local maxima and call them "True"
+  peak_index <- index(peak_true)[coredata(peak_true)]           #give index values at peaks (ie "True")
+  peak_values <- CO2_values[peak_index]                         #pull the value at peak indicies
+  peak_values <- subset(peak_values, peak_values>2)             #removes peaks less than 2 b/c probably noise
+  length(peak_values) <- maxSamples                             #make list the same length to add to matrix
+  all_peaks <- cbind(all_peaks, peak_values)                    #add list to matrix
+}
+
+all_peaks <- all_peaks[,-1]                      #remove first column (empty, caused by set up)
+save_names <- sub(".txt", "", filelist)          #file names without ".txt"
+colnames(all_peaks) <- save_names                #file names as column names
+write.xlsx(all_peaks, "Peak_Values_Cleaned.xlsx")#export and save as an excel file
+```
