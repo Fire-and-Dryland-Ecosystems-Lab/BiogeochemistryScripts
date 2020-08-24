@@ -1,0 +1,84 @@
+---
+title: "SIR Calculations"
+author: "MaryKBrady"
+---
+See "SIR_peaks" for code to pull the peaks from the LiCor output files.
+
+This script analyzes the CO2 data from SIR to give an index for microbial biomass. 
+This script will run through all the files in the designated working directory.
+To run specific files, put the file name or a list of file names into "files <-" instead of running list.files().
+
+This script outputs an excel file containing the sample code and the biomass index (ug C-CO2 per g dry soil per hour). 
+The file will have the same name as the input but adds "_results". 
+If you wish to save output to a different folder than the folder where the input files are stored, uncomment the
+two setwd lines (near beginning and end of the for loop) and put in the appropriate file paths. 
+By default, it saves to the same folder as the input files.
+
+The input can be csv or xlsx (note: excel files cannot run if they are open) and should be set up as follows:  
+code | sample_weight | dry_weight | density | t_1 | t_2 | t_3 | standard | peak   
+
+List the appropriate peak values under t_1-3 (t_1 is the initial reading, t_2 is two hours, and t_3 is the final reading at 4 hours). Under standard and peak put the standard concentrations and their peaks for the calibration curve  
+
+Check the jar_vol (full size of an empty jar) and solution.per.g values as the top of the script
+  
+```{r, message=F}
+#install.packages("tidyverse")
+#install.packages("openxlsx")
+#install.packages("readxl")
+library(tidyverse)
+library(openxlsx)
+library(readxl)
+
+setwd("my_data_folder") #input folder
+file_names <- list.files()
+
+jar_vol <- 311.1   #size of the jars in ml
+solution.per.g <- 2 #mL of solution (glucose or yeast) added per g dry soil
+#constants
+P <- 0.86  #pressure in atm in Reno https://www.mide.com/air-pressure-at-altitude-calculator
+r <- 82.05 #gas constant
+t <- 294   #about 70*F in K
+
+for (a in file_names) {
+  #setwd(folder for input files, same as set above)  #use this line if input and output folders differ
+#determine file type and use appropriate read function
+  if (grepl(".xlsx", a) == T){  
+    input <- read_excel(a)
+  } else if (grepl(".csv", a) == T) {
+    input <- read.csv(a)
+  } else {
+    cat("Something went wrong reading file ", a, " Is it a csv or xlsx? If xlsx, make sure file is not open")
+    stop()
+  }
+#separate samples and standards
+  samples <- input %>% select(code | sample_weight | dry_weight | density | t_1 | t_2 | t_3) %>% #just samples
+    na.omit()
+  standards <- input %>% select(standard | peak) %>% na.omit()  #just standards               
+#Calculate the calibration curve  
+  regression <- lm(peak ~ standard, standards)   #creates calibration curve
+  intercept <- as.numeric(coef(regression)[1])   #pulls out intercept from regression
+  slope <- as.numeric(coef(regression)[2])       #pulls out slope from regression
+  #summary(regression)                           #optional line to check R2, should be a really high R2
+#apply calibration curve to samples readings to get CO2 concentrations
+  samples <- samples %>%
+    mutate(concT1 = (t_1-intercept)/slope) %>%
+    mutate(concT2 = (t_2-intercept)/slope) %>%
+    mutate(concT3 = (t_3-intercept)/slope)
+#calculate CO2 respired per gram dry soil per hour
+  samples <- samples %>%
+    mutate(solution = round(dry_weight * solution.per.g, digits = 0)) %>% #volume of solution added
+    mutate(volume = solution + (sample_weight / density)) %>%    #volume solution + volume sample in ml
+    mutate(headspace = jar_vol - volume) %>%                     #headspace in ml                  
+    mutate(T3_T1 = (concT3 - concT1)/4) %>%                      #average change in CO2 concentration per hour   
+    mutate(n = ((P*headspace)/(r*t))*1000) %>%                   #n in PVnrt - mmol air in jar              
+    mutate(CO2 = T3_T1*n*0.001*12.01) %>%                        #ug C-CO2 produced 
+    mutate(ugC.per.gdry = CO2/dry_weight)                        #ug C-CO2 produced per gram dry soil per hour
+#save results
+  #setwd("folder for saving output files")   #use this line if input and output folders differ
+  Biomass <- samples %>%
+    select(code | ugC.per.gdry)
+  save_name <- sub(".csv", "", a) #remove .csv from file name
+  save_name <- sub(".xlsx", "", save_name) #remove .xlsx from file name
+  write.xlsx(Biomass, paste0(save_name, "_results.xlsx"))
+}
+```
