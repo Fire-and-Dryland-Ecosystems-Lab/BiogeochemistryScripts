@@ -1,19 +1,19 @@
 ---
 title: "SIR_Peaks"
 author: "MaryKBrady"
+R version: "4.0.2 (2020-06-22) -- 'Taking Off Again'"
 ---
 
-This script pulls the peaks out of LiCor output files. The input files for the script need to be saved as txt files (as they are from the LiCor) but the script will create an 
-excel file of all the peak values at the end (called "Peak_Values_Cleaned) saved into your working directory. The columns in the output file are each named with the 
-corrosponding input file name. 
+This script pulls the peaks out of LiCor output files. The input files for the script need to be saved as txt files (as they are from the LiCor) but the script will create an excel file of all the peak values at the end (called "Peak_Values_Cleaned) saved into your working directory. The columns in the output file are each named with the corrosponding input file name. 
 
+The max number of peaks per input file is set at 40. Change maxSamples if you have more than 40 peaks in one file. Having fewer than that is fine, it is only an issue if you have more. 
 *The CO2 reading in the txt file must be the 4th column! No other columns or column order really matters*
+-if it is not in the 4th column, change the "CO2_values <- " line accordingly
 
-The max number of peaks per input file is set at 40. Change maxSamples if you have more than 40 peaks in one file. Fewer than that is fine. 
 Set your working directory - this should be a folder with only the files you wish to run (or specify a list of file names instead of using list.file() to run only a few files).      
 The window size of 3 (in rollapply) seems to work quite well. Try adjusting only if you're getting weird results  
-If you have tiny peaks (less than 2) change the cut off for peak_values (not peak_true!). You will probably have to do some manual cleaning of the output file if you lower the 
-cut off value too much.  
+If you have tiny peaks (less than 2) change the cut off for peak_values (not peak_true!). You will probably have to do some manual cleaning of the output file if you lower the cut off value too much.  
+If you have trouble reading in the txt file, try the alternate read.table line (commented out)
 ```{r}
 #install.packagges("zoo")
 #install.packages("openxlsx")
@@ -27,7 +27,8 @@ maxSamples <- 40  #this can be changed (too high is fine, too low is not)
 all_peaks <- matrix(nrow=maxSamples)      #set up matrix for results
 for(a in filelist){
   file_name <- a                                                #one file at a time
-  input <- read.table(file_name, header = TRUE, fill = TRUE)    #read in file
+  input <- read.table(file_name, header = T, fill = T)          #read in file
+  #input<-read.table(file_name, header=T, sep="\t",fill=F, strip.white=T)    #read in file    --from KStrain
   CO2_values <- input[,4]                                       #only want CO2 column
   zinput<- as.zoo(CO2_values)                                   #change CO2 column to zoo object
   peak_true <- rollapply(zinput, 3, function(x) which.max(x)==2)#find the local maxima and call them "True"
