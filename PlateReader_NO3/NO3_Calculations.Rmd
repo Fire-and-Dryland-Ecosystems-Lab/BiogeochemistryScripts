@@ -1,9 +1,9 @@
 ---
 title: "NO3_Calculations"
-author: "MKB"
+author: "MaryKBrady"
 R version: "4.0.2 (2020-06-22) -- 'Taking Off Again'"
 ---
-This code uses absorbance values to calculate ug NO3 per g dry soil (see NO3_absorbances to quickly get mean vales for sample replicates from plate reader output). It will run through all the files in the designated folder so this folder should only contain files for this script. To run one file, still set the working directory but then type the file name or a list of file names into "file_names <-" instead of running list.files().
+This code uses absorbance values to calculate ug NO3 per g dry soil (see NO3_absorbances to quickly get mean absorbance values for sample replicates from plate reader output). It will run through all the files in the designated folder so this folder should only contain files for this script. To run one file, still set the working directory but then type the file name or a list of file names into "file_names <-" instead of running list.files().
 
 The script will output the results as an excel file into the working directory folder with "_results" appended to each file name. If you wish to save to a folder other than the folder where the input files are stored, uncomment the two setwd lines (near beginning and end of the for loop) and put in the appropriate file paths. 
 
@@ -12,7 +12,7 @@ If you used a plate reader, each plate will probably need its own file unless yo
 The input files can be excel or csv. Note that excel files cannot run if they are open. Each input file must have these column headers (no caps):
 code | soil_weight | kcl_vol | frac_wc | dilution | sample_vol | absorbance | standard | stnd_absorbance
 
-code is the sample id, soil_weight is the wet weight in g of the soil used in the extraction (not dry equivalent weight), kcl_vol is the KCl used in the extraction in mL (probably 30 or 40ml), frac_wc is the fractional water content of the soil (not including any water added for wet incubations) (fractional wc = wet-dry/wet), dilution is the amount in mL added to dilute the extraction (put 0 if no dilution), sample_vol is the volume of sample pipetted into each well in ml (not ul!), absorbance is the mean aborbance of replicates for the sample, standard is the ppm of the standards used for calibrating, and stnd_absorbance is the absorbance for standards
+code is the sample id, soil_weight is the wet weight in g of the soil used in the extraction (not dry weight equivalent), kcl_vol is the KCl used in the extraction in mL, frac_wc is the fractional water content of the soil (not including any water added for wet incubations) (fractional wc = wet-dry/wet), dilution is the amount in mL added to dilute the extraction (put 0 if no dilution), sample_vol is the volume of sample used/pipetted into each plate reader well in ml (not ul!), absorbance is the mean aborbance of replicates for the sample, standard is the ppm of the standards used for calibrating, and stnd_absorbance is the absorbance for standards
 
 Keep console open to view and respond to possible propmts and checks
 
@@ -25,7 +25,7 @@ library(openxlsx)
 library(readxl)
 
 setwd("my_folder")    #folder for input files
-file_names <- list.files()  #pulls all the files
+file_names <- list.files()  #pulls all the files in the folder
 
 for (a in file_names) {
   #setwd(file path for input files, same as set above)  #use this line if input and output folders differ
@@ -35,12 +35,12 @@ for (a in file_names) {
   } else if (grepl(".csv", a) == T) {
     input <- read.csv(a, header = T)
   } else {
-    stop(cat("Something went wrong reading file ", a, " Is it a csv or xlsx?"))
+    stop(cat("Something went wrong reading file ", a, " Is it a .csv or .xlsx?"))
   }
 #check for sample vol that might be in ul
   if (interactive()) { 
     if (max(input$sample_vol) >= 1){
-      check_volume <- readline(prompt = cat("Warning: in file", a, "your sample_vol might be too high. Is ", max(input$sample_vol), " in ml and not ul? \nIf it is in ml type 'yes' then press enter to continue, if it is not in ml type 'no' then press enter to stop the script"))
+      check_volume <- readline(prompt = cat("Warning: in file", a, "your sample_vol might be too high. Is ", max(input$sample_vol), " in ml and not ul? \nIf it is in ml type 'yes' then press enter to continue, if it is not in ml, type 'no' then press enter to stop the script"))
       if (check_volume == "no"){
         stop()
       } else if (check_volume != "no" & check_volume != "yes"){
