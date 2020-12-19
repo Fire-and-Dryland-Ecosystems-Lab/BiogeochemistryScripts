@@ -5,8 +5,8 @@ author: "ErinJHanan"
 This code uses:
 1. Bulk soil sample weights (field moist; g)
 2. Bulk soil sample volume (cm3)
-3. Rock weights (optional; g)
-4. Rock volume (optional; cm3)
+3. Rock weights (optional, if not using put zeros in column; g)
+4. Rock volume (optional if not using put zeros in column; cm3)
 5. Subsample wet weights (field moist; does not include filter; g)
 6. Saturated subsample + filter weights (g)
 7. Soil oven dry + filter weights (g)
