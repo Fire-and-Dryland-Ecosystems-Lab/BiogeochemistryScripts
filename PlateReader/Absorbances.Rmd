@@ -1,8 +1,9 @@
 ---
-title: "NO3_NH4_absorbances"
+title: "Absorbances"
 author: "MaryKBrady"
 R version: "4.0.2 (2020-06-22) -- 'Taking Off Again'"
 ---
+
 This file takes the absorbance values from the plate reader excel output files and averages the replicates for each sample. It also calculates standard error for each sample. It will run through all the files in the designated folder so this folder should only contain files for this script. To run one file, still set the working directory but then type the file name into "files <-" instead of running list.files().
 
 The output is an excel file with "_means" appended to the end of the file name. If you wish to save to a different folder than the folder where the input files are stored, uncomment the two setwd lines in the for loop and put in the appropriate file paths. 
