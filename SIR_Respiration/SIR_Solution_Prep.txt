@@ -1,0 +1,20 @@
+SIR -- make yeast solution 3 grams per 250 mL = 12 mg/mL (Fierer protocol)
+
+want to deliver 20 mg/g dry soil, thus 10 g dry soil needs 200 mg yeast 
+200/12 = 16.67 mL per 10 g dry soil
+To calculate for each sample: 1.667 * dry soil weight in g
+
+
+
+Atmosphere is ~0.4% CO2 (407.4 ppm)
+20,000 ppm = 20% (anaerobic between 15 and 20%)
+
+
+
+
+
+
+
+
+
+
