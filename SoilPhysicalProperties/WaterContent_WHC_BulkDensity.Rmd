@@ -22,9 +22,12 @@ The script will calculate:
 3. Water Holding Capacity (WHC; g/g dry soil)
 4. Bulk density (g/cm3)
 
-The results will be output as an excel file into the working directory folder with "_results" appended to each file name. If you wish to save to a folder other than the folder where the input files are stored, uncomment the two setwd lines (near beginning and end of the for loop) and put in the appropriate file paths. 
+The results will be output as an excel file into the working directory folder with "_results" appended to each file name. 
+If you wish to save to a folder other than the folder where the input files are stored, uncomment the two setwd lines 
+(near beginning and end of the for loop) and put in the appropriate file paths. 
 
-The input files can be excel or csv. Note that excel files cannot run if they are open. Each input file must have these column headers (no caps):
+The input files can be excel or csv. Note that excel files cannot run if they are open. 
+Each input file must have these column headers (no caps):
 code | bulk_soil_weight | rock_weight | rock_vol | subsample_weight | sat_subsample_weight | dry_subsample_weight
 
 You will also need to enter the average oven dry filter weight and saturated filter weights under 'set constants' below.
@@ -65,17 +68,20 @@ for (a in file_names) {
   }
 
 #check column names
-  for (b in c("code", "bulk_soil_weight", "rock_weight", "rock_vol", "subsample_weight", "sat_subsample_weight", "dry_subsample_weight")){
-    if (!(b %in% names(input))){
-      stop(paste("column name", b, "not found in file", a))
+  for (b in c("code", "bulk_soil_weight", "rock_weight", "rock_vol", "subsample_weight", "sat_subsample_weight", 
+    "dry_subsample_weight")){
+      if (!(b %in% names(input))){
+        stop(paste("column name", b, "not found in file", a))
     }
   }
 
   calcs <- input %>%
     mutate(
-      wc = (subsample_weight - (dry_subsample_weight - filter_weight)) / (dry_subsample_weight - filter_weight),
+      wc = (subsample_weight - (dry_subsample_weight - filter_weight)) 
+        / (dry_subsample_weight - filter_weight),
       fwc = (subsample_weight - (dry_subsample_weight - filter_weight)) / subsample_weight,
-      whc = ((sat_subsample_weight - sat_filter_weight) - (dry_subsample_weight - filter_weight))/ (dry_subsample_weight - filter_weight),
+      whc = ((sat_subsample_weight - sat_filter_weight) - (dry_subsample_weight - filter_weight)) 
+        / (dry_subsample_weight - filter_weight),
       bd = ((bulk_soil_weight - rock_weight) * (1-fwc)) / (core_volume - rock_vol)
     )
     
