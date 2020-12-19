@@ -4,8 +4,8 @@ author: "ErinJHanan"
 ---
 This code uses 3 constants:
 1. Soil core volume (for the bulk sample; cm3)
-2. Average saturated filter weights (g)
-3. Average oven dry filter weights (g)
+2. Average saturated filter weight (g)
+3. Average oven dry filter weight (g)
 
 And 7 data columns:
 1. Code (sample ID)
@@ -57,7 +57,7 @@ setwd("My_folder")    #folder for input files
 file_names <- list.files()  #pulls all the files in the folder
 
 for (a in file_names) {
-  #setwd(file path for input files, same as set above)  #use this line if input and output folders differ
+#setwd(file path for input files, same as set above)  #use this line if input and output folders differ
 #determine file type and use appropriate read function
   if (grepl(".xlsx", a) == T){   
     input <- read_excel(a, col_names = T)
