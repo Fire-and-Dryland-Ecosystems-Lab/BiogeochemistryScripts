@@ -1,6 +1,7 @@
 ---
 title: "WaterContent, WHC, Bulk Density"
 author: "ErinJHanan"
+date: 19 Dec 2020
 ---
 This code uses 3 constants:
 1. Soil core volume (for the bulk sample; cm3)

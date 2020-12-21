@@ -1,6 +1,7 @@
 ---
 title: "Microbial Biomass C and N, Exchangeable organic C & N"
 author: "ErinJHanan"
+date: 20 Dec 2020
 ---
 This script calculates microbial biomass C, N, biomass C:N and exchangeable organic C 
 
@@ -15,7 +16,7 @@ This code uses 6 constants:
 5. C_cfe blank correction (average NPOC in fumigated blanks mg/L)
 6. N_cfe blank correction (average NPOC in fumigated blanks mg/L)
 
-And 11 data columns:
+And 12 data columns:
 1. Code (sample ID)
 2. Bulk density (g/cm3)
 3. Soil weight extracted for unfumigated samples (field moist; g)
@@ -64,10 +65,8 @@ library(readxl)
 
 Set constants
 ```{r, message=F}
-micC_corr <- 0.45 #from Beck et al 1997; based on extraction efficiency; 
-  #change to 1 if no correction factor
-micN_corr <- 0.54 #from Brookes et al 1985; based on extraction efficiency; 
-  #change to 1 if no correction factor
+micC_corr <- 0.45 #from Beck et al 1997; based on extraction efficiency; set as 1 if no correction factor
+micN_corr <- 0.54 #from Brookes et al 1985; based on extraction efficiency; set as 1 if no correction factor
 NPOC_blank <- 0.0 # average NPOC in unfumigated blanks mg/L
 TN_blank <- 0.0 #average TN in unfumigated blanks mg/L
 NPOC_cfe_blank <- 0.0 #average NPOC in fumigated blanks mg/L
@@ -109,7 +108,8 @@ for (a in file_names) {
         (soil_weight_extracted * (1 - fwc)) *1000,
       TN_cfe_soil = (((TN_cfe - TN_cfe_blank) * (subsample_vol + dilution_vol)) * 
         (K2SO4_vol / 1000)) / (soil_weight_extracted_cfe * (1 - fwc)) *1000,
-      #then calculate microbial biomass C & N, Exchangeable organic C & N 
+    
+    #then calculate microbial biomass C & N, Exchangeable organic C & N 
       micC = (NPOC_cfe_soil - NPOC_soil) / micC_corr,
       micN = (TN_cfe_soil - TN_soil) / micN_corr,
       micCN = micC/micN,
@@ -119,10 +119,10 @@ for (a in file_names) {
     
 # Save results
   #setwd("folder for saving output files")  #use this line if input and output folders differ
-  Microbial_exchangeable_CN <- calcs %>%
+  microbial_exchangeable_CN <- calcs %>%
     select(code | micC | micN | micCN | EOC | EON) 
   save_name <- sub(".csv", "", a) #remove .csv from file name
   save_name <- sub(".xlsx", "", save_name) #remove .xlsx from file name
-  write.xlsx(Microbial_exchangeable_CN, paste0(save_name, "_results.xlsx"))
+  write.xlsx(microbial_exchangeable_CN, paste0(save_name, "_results.xlsx"))
 }
 ```
