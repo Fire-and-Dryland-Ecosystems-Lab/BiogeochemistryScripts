@@ -76,8 +76,7 @@ TN_cfe_blank <- 0.0 #average NPOC in fumigated blanks mg/L
 
 Read in file(s), check for missing columns, perform calculations, generate outputs
 ```{r, message=F}
-#setwd("My_folder")    #folder for input files
-setwd("~/Desktop/test/microbialBiomass")
+setwd("My_folder")    #folder for input files
 file_names <- list.files()  #pulls all the files in the folder
 
 for (a in file_names) {
