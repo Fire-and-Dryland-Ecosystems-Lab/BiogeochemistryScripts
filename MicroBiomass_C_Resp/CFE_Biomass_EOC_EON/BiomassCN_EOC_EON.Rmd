@@ -76,7 +76,8 @@ TN_cfe_blank <- 0.0 #average NPOC in fumigated blanks mg/L
 
 Read in file(s), check for missing columns, perform calculations, generate outputs
 ```{r, message=F}
-setwd("My_folder")    #folder for input files
+#setwd("My_folder")    #folder for input files
+setwd("~/Desktop/test/microbialBiomass")
 file_names <- list.files()  #pulls all the files in the folder
 
 for (a in file_names) {
@@ -101,20 +102,20 @@ for (a in file_names) {
   calcs <- input %>%
     #first blank correct and convert NPOC/TN for unfumigated and fumigated samples into ug/g dry soil
     mutate(
-      NPOC = (((NPOC - NPOC_blank) * (subsample_vol + dilution_vol)) * (K2SO4_vol / 1000)) / 
-        (soil_weight_extracted * (1 - fwc) *1000),
-      NPOC_cfe = (((NPOC_cfe - NPOC_cfe_blank) * (subsample_vol + dilution_vol)) * 
-        (K2SO4_vol / 1000)) / (soil_weight_extracted_cfe * (1 - fwc) *1000),
-      TN = (((TN - TN_blank) * (subsample_vol + dilution_vol)) * (K2SO4_vol / 1000)) / 
-        (soil_weight_extracted * (1 - fwc) *1000),
-      TN_cfe = (((TN_cfe - TN_cfe_blank) * (subsample_vol + dilution_vol)) * 
-        (K2SO4_vol / 1000)) / (soil_weight_extracted_cfe * (1 - fwc) *1000),
+      NPOC_soil = (((NPOC - NPOC_blank) * (subsample_vol + dilution_vol)) * (K2SO4_vol / 1000)) / 
+        (soil_weight_extracted * (1 - fwc)) *1000,
+      NPOC_cfe_soil = (((NPOC_cfe - NPOC_cfe_blank) * (subsample_vol + dilution_vol)) * 
+        (K2SO4_vol / 1000)) / (soil_weight_extracted_cfe * (1 - fwc)) *1000,
+      TN_soil = (((TN - TN_blank) * (subsample_vol + dilution_vol)) * (K2SO4_vol / 1000)) / 
+        (soil_weight_extracted * (1 - fwc)) *1000,
+      TN_cfe_soil = (((TN_cfe - TN_cfe_blank) * (subsample_vol + dilution_vol)) * 
+        (K2SO4_vol / 1000)) / (soil_weight_extracted_cfe * (1 - fwc)) *1000,
       #then calculate microbial biomass C & N, Exchangeable organic C & N 
-      micC = (NPOC_cfe - NPOC) / micC_corr,
-      micN = (TN_cfe - TN) / micN_corr,
+      micC = (NPOC_cfe_soil - NPOC_soil) / micC_corr,
+      micN = (TN_cfe_soil - TN_soil) / micN_corr,
       micCN = micC/micN,
-      EOC = NPOC,
-      EON = TN - TIN
+      EOC = NPOC_soil,
+      EON = TN_soil - TIN
     )
     
 # Save results
@@ -123,6 +124,6 @@ for (a in file_names) {
     select(code | micC | micN | micCN | EOC | EON) 
   save_name <- sub(".csv", "", a) #remove .csv from file name
   save_name <- sub(".xlsx", "", save_name) #remove .xlsx from file name
-  write.xlsx(WC_FWC_WHC_BD, paste0(save_name, "_results.xlsx"))
+  write.xlsx(Microbial_exchangeable_CN, paste0(save_name, "_results.xlsx"))
 }
 ```
