@@ -30,7 +30,7 @@ And 12 data columns:
 11. NPOC in fumigated sample (from TOC; mg/L)
 12. TN (from TOC; mg/L)
 
-***NOTE: 5-9 above are assumed to be the same for fumigated and unfumigated samples
+NOTE: 5-9 above are assumed to be the same for fumigated and unfumigated samples
 
 This script outputs an excel file containing:
 1. Sample code 
