@@ -8,6 +8,7 @@ This code uses 3 constants:
 2. Average saturated filter weight (g)
 3. Average oven dry filter weight (g)
 
+
 And 7 data columns:
 1. Code (sample ID)
 2. Bulk soil sample weights (field moist; g)
