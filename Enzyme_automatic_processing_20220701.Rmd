@@ -256,5 +256,5 @@ enzyme_avg<-enzyme_combo %>%
 
 #rows of the matrix should be equal to # of enzymes used (8 for kay 7 for keenan)*(# of samples)
 setwd("~/Desktop/enzymes_2022/baseline_2022/sample_plates/4_combined") 
-write.xlsx(enzymes, "enzymes_combined.xlsx")
+write.xlsx(enzyme_avg, "enzymes_combined.xlsx")
 ```
