@@ -1,0 +1,273 @@
+---
+title: "enzymes automatic processing"
+author: "kstrain"
+date: "10/17/2022"
+output: html_document
+---
+
+#WHAT DOES THIS FILE DO?
+This file is meant to automate outputs from enzymes analyses and convert fluorescence to nmol/gdrysoil/hr
+This R Markdown automates the enzymes data processing using the following steps: 
+  1) using MUB/MUC standard plates, generate the 12 standard curves for each    sample ID and export list of ID, slope, intercept and R2 values
+  2) import and combine MUB/MUC standard curves into one dataset and plot R2    values for QA/QC purposes
+  3) import and use standard curves to calculate fluorescence readings for all     sample x enzyme plates, convert to nmol/gram dry soil, and combine the        results for export
+
+
+#GETTING STARTED:
+create a set of folders for
+  1) MUB/MUC labeled standard plates (labeling instructions below)
+  2) output folder for MUB/MUC standard curve calculations
+  3) Dry weights of soil samples
+  4) labelled sample plates (instructions below)
+  5) output of labeled sample plates.
+  6) output of combined and averaged file
+
+
+#SET UP 2 FOLDERS
+  1) one for standard plates (MUB/MUC). call the folder standard_plates
+  2) another for sample plates. Call the folder sample_plates
+
+
+#FORMATTING MUB/MUC STANDARD PLATES   
+THE MUB and MUC standards can be saved as a XLSX or CSV with format:
+std|ID1|ID2|ID3|ID4|ID5|ID6|ID7|ID8|ID9|ID10|ID11|ID12|gain|substrate
+std = standard concentration in ppm (ex. 0, 0.5, 5, 10, 25, 50, 100)
+ID1:12 (here used PEA1-12 is ID number for 12 samples) values in the cells below the header are fluorescence readings from the plate
+gain: gain read for each MUB/MUC plate
+substrate: whether the plate is MUB/MUC <- this one is particularly important, and is how we will assign samples to their standard curves later
+
+
+##STEP 1: IMPORT AND CREATE STANDARD CURVES FROM MUB/MUC PLATES 
+You will have to change the following to generalize this code for your purposes:
+  line2 61 and 66: select input directory (point 1 in list of folders above)
+  line 69: change sample ID to gather the dataset by
+  line 104:  select separate output folder for STANDARD CURVES (point 2 above)
+  
+  
+  ## quick troubleshooting: 
+      1) Have you made sure your standard values are read as numeric?
+      2) if "uninitialized column" try importing as CSV
+      3) is there a folder or .temp file (command + space) in your folder?
+      4) are there hidden rows of content in your excel file? Delete a few lines after bottom row in plate 
+```{r standards}
+#install.packages("tidyverse")
+#install.packages("openxlsx")
+#install.packages("readxl")
+library(tidyverse)
+library(openxlsx)
+library(readxl)
+
+#set working directory to file where standard plates (relabeled) are stored (folder 1 in getting started section); read in list of all files in the folder
+setwd("~/Desktop/enzymes/enzymes_2022/end_ND/standard_plates_set2/import") 
+standards <- list.files()
+
+#this code will loop through all files and create standard curves for each of the samples in a plate (12 curves per MUB/MUC standard plate) and store them in a dataframe for export. 
+for (a in standards) {
+setwd("~/Desktop/enzymes/enzymes_2022/end_ND/standard_plates_set2/import") 
+#import file using correct import statement
+  if (grepl(".xlsx", a) == T){  
+    standards <- read_excel(a)
+  } else if (grepl(".csv", a) == T) {
+    standards <- read.csv(a)
+  } else {
+    cat("Something went wrong reading file ", a, " Is it a csv or xlsx? If xlsx, make sure file is not open")
+    stop()
+  }
+
+#convert ppm standards to umol values, which we will use for standard curves
+  standards$umol<-as.numeric(standards$std)*.0002 #getting and error here? try as.numeric(standards$std) before line 71
+  
+#make standards long form, gathering by ID1-ID12 (this line may need tweaking for generalization) and creating a reading column with reading value for each unique ID and standard case
+
+  standard <- gather(standards, ID, reading, END13:END24, factor_key=TRUE)
+  curve <- standard %>% select(umol | ID |reading |substrate ) %>% na.omit()  #just standards 
+  
+#split long form dataset into 12 datasets: one dataframe for each sample ID. This allows us to calculate standard curves separately. Also, create empty dataframe to save lm results for each sample.
+  data_list <- split(curve, f = curve$ID)                 
+  savetest <- data.frame(ID = rep(NA, 11), int = rep(NA, 11), slope = rep(NA, 11), r2 = rep(NA, 11))
+
+#perform a regression on each sample dataframe in the list (you can check R2 values in rows 8 and 9)
+for(i in 1:length(data_list)){
+    savetest[[i]]=summary(lm(reading~umol,data=data_list[[i]])) 
+}        
+
+#create slope and intercept lists
+int <- data.frame(interecept= rep(NA, 1))     # Creating data containing NA
+slope <- data.frame(slope = rep(NA, 1))     # Creating data containing NA
+
+#populate slope and intercept lists from lms for each sample type in the list
+for(i in 1:length(data_list)){
+    int[[i]]=as.numeric(coef(summary(lm(reading~umol,data=data_list[[i]])))[1]) 
+    slope[[i]]=as.numeric(coef(summary(lm(reading~umol,data=data_list[[i]])))[2]) 
+} 
+
+#save list of ID and lm values needed  (r2, int, slope) in an empty dataframe that we will popualate with the results
+library(dplyr)
+curve_list<-data.frame(ID = rep(NA, 12), int = rep(NA, 12), slope = rep(NA, 12)) 
+curve_list$ID<-unique(curve$ID) #add in ID from initial dataframe
+  curve_list<-cbind(curve_list, t(savetest[8,])) #bind r2 values
+  names(curve_list)[names(curve_list) == '8'] <- 'R2' #rename r2 r2 :) 
+  curve_list$int <- cbind(as.numeric(int))   #pulls out intercept from regression
+  curve_list$slope <- cbind(as.numeric(slope))  
+  curve_list$substrate=unique(curve$substrate)
+  curve_list$gain=unique(curve$gain)
+  rownames(curve_list)<-NULL
+
+#write to export in new folder :) if you want XLSX you can use the commented line below
+  setwd("~/Desktop/enzymes/enzymes_2022/end_ND/standard_curves") 
+save_name <- sub(".csv", "", a) #remove .csv from file name
+  #save_name <- sub(".xlsx", "", save_name) #remove .xlsx from file name
+  write.xlsx(curve_list, paste0(save_name, "_stds.xlsx"))
+  
+}
+```
+
+
+
+
+
+##STEP 2: CALCULATE SAMPLE VALUES
+You now have a file for each standard plate that includes the 12 standard curves in the format ID|int|slope|R2|substrate.
+This chunk imports your standards and combines them in one dataframe, then plots r2 values
+
+TO DO BEFORE RUNNING: 
+-Line 124 (optional) select separate output folder for standard curve source (point 2 above)
+```{r importstd}
+#import and bind standard files in a single dataframe
+setwd("~/Desktop/enzymes/enzymes_2022/end_ND/standard_curves/csv") 
+file_names <- dir("~/Desktop/enzymes/enzymes_2022/end_ND/standard_curves/csv")
+std_curves <- do.call(rbind,lapply(file_names,read.csv))
+
+#plot r2 values and check quality; color by MUB standard or MUC standard
+library(ggplot2)
+r2plot<-ggplot(data = std_curves) +
+  aes(x = ID, y = R2, color=substrate) +
+  geom_hline(yintercept=.990, linetype="dashed", 
+                color = "red")+
+  geom_jitter()+
+  theme_classic()
+r2plot
+```
+
+
+
+
+#CALCULATE SAMPLE VALUES------------------------------------------------------------------------;
+This next chunk imports sample tray fluorescence readings and calculates nmol/gdrysoil/
+
+
+#SAMPLE PLATE FORMAT
+Sample plates format as: enzyme|ID1:12|gain|substrate
+  enzyme: contains which enzyme substrate (e.g., XYL, PHOS, AG) was added to the row
+  ID1:12 contains ID at the top and fluorescence readings below
+   ****ID should ideally be formatted as [projectcode][number][A-C], so example PEA1A or PEA12C. Not following this technique might cause sorting problems later on... 
+  gain: gain reading for that plate file
+  substrate: which standard substrate (MUB/MUC) is associated with the gain
+  
+  
+#SOIL/SEDIMENT WEIGHT FORMAT
+This chunk also imports sample weights, a simple list of ID|weight_g; 
+
+#THINGS YOU NEED TO DO (prior to running this chunk)
+  Line 184 change directory and file name to match your sample weight files (point 3 in start section)
+  Line 188 & 189: change location to where your sample plates are located (point 4 in start section)
+  Line 204: change "PEA" to your sample ID code
+  Line 241/245: change output folder destination (point 5 in start section)
+```{r importsamps}
+library(tidyr)
+library(dplyr)
+library(openxlsx)
+library(readxl)
+
+#bring in enzyme dry soil weights (may be its own loop eventually with wc calculations)
+setwd("~/Desktop/enzymes/enzymes_2022/end_ND") 
+weights<-read.csv("enzyme_weights.csv")
+
+#set working directory to file where sample plates (relabeled as above) are stored
+setwd("~/Desktop/enzymes/enzymes_2022/end_ND/sample_plates_all") 
+samps <- list.files()
+
+for (a in samps) {
+setwd("~/Desktop/enzymes/enzymes_2022/end_ND/sample_plates_all") 
+#import sample files one by one using correct import statement
+  if (grepl(".xlsx", a) == T){  
+    samples <- read_excel(a)
+  } else if (grepl(".csv", a) == T) {
+    samples <- read.csv(a)
+  } else {
+    cat("Something went wrong reading file ", a, " Is it a csv or xlsx? If xlsx, make sure file is not open")
+    stop()
+  }
+
+#gather sample plate by ID (will gather anything as long as you have a keyword, here I have PEA#A/B/C for my ID)
+samples_l <- gather(samples, replicate, reading,  contains("PEA"), factor_key=TRUE)
+
+#standardize ID by removing project code (PEA) and replicate ID (A,B,C)
+samples_l$ID <-gsub("[^0-9.-]", "", samples_l$replicate)  #ID is now a numeric variable (no PEA#)
+std_curves$ID <-gsub("[^0-9.-]", "", std_curves$ID)  #ID is now a numeric variable (no PEA#)
+weights$ID <-gsub("[^0-9.-]", "", weights$ID)  #ID is now a numeric variable (no PEA#)
+
+#bind to correct standard curve and dry weight by ID (this will include both MUB/MUC)
+calcs<-merge(samples_l, std_curves, by = "ID")   #should have double rows in samples_l
+calcs<-merge(calcs, weights, by = "ID")          #should keep the same # of rows
+
+#add in incubation time in hrs, (this is typically 3 hours) and perform conversions
+calcs$incub_hrs<-3
+ calcs <- calcs %>%
+    mutate(umol_samp = ((reading-int)/slope)) %>%   #to convert from fluorescence to umol
+    mutate(umol_gram = (umol_samp*91)) %>%          #add in dilution of buffer (91mL)          
+    mutate(umol_gdrysoil_hr = umol_gram/incub_hrs*weight_g)%>%   
+    mutate(nmol_gdrysoil_hr = umol_gdrysoil_hr*1000)    
+
+#subset the dataframes for the appropriate standard curve and enzyme combination (LAP is calculated only using MUC, and MUB is used to calculate all else)
+#here we need to separate the correct enzyme with the correct standard curve.
+zymes <- calcs %>%
+    select(replicate | enzyme |substrate.x| substrate.y | nmol_gdrysoil_hr) #should have same # of rows
+
+#keep only values that are appropriate for the gain reading (MUB/MUC)
+zymes<- zymes %>% 
+  filter(substrate.x == substrate.y)
+
+#filter out enzymes that are not appropriate for the plate 
+#MUC is used to calculate only LAP and LDOPA (?), MUB is for everything else! 
+MUC<-subset(zymes, substrate.y=="MUC" & (enzyme== "LAP"))
+MUB<-subset(zymes, substrate.y=="MUB" & (enzyme!="LAP"))
+enzymes <-rbind(MUB, MUC)
+
+#EXPORT
+save_name <- sub(".csv", "", a) #remove .csv from file name
+#save_name <- sub(".xlsx", "", save_name) #remove .xlsx from file name
+setwd("~/Desktop/enzymes/enzymes_2022/end_ND/calculated_values") 
+write.xlsx(enzymes, paste0(save_name, "_results.xlsx"))
+
+#if you want to save calculations, you can do so by uncommenting below :)
+setwd("~/Desktop/enzymes/enzymes_2022/end_ND/save_work") 
+write.xlsx(calcs, paste0(save_name, "_calculations.xlsx"))
+
+}
+```
+
+#COMBINE ALL OUTPUT FILES INTO ONE DATAFRAME, AVERAGE BY ID, AND EXPORT 
+This chunk combines all of your enzyme values and averages by sample ID before exporting. 
+
+TO DO: 
+  -Lines 260 & 261: Change working directory for output of last chunk 
+  -line 272: Change working directory to output folder
+```{r combine}
+#import and bind standard files in a single dataframe
+library(dplyr)
+setwd("~/Desktop/enzymes/enzymes_2022/end_ND/calculated_values") 
+file_names <- dir("~/Desktop/enzymes/enzymes_2022/end_ND/calculated_values")
+enzyme_combo <- do.call(rbind,lapply(file_names,read.xlsx))
+
+#summarize by unique substrate; should end up with one obs for each rep and substrate you used in your analysis (ex: keenan uses 7, kay uses 8 because they add LDOPA)
+enzyme_combo$ID <-gsub("[^0-9.-]", "", enzyme_combo$replicate)  #ID is now a numeric variable (no PEA#)
+enzyme_avg<-enzyme_combo %>%                      
+  group_by(ID, enzyme, substrate.y) %>% #should be the same number of obs with/without substrate   
+  summarise_at(vars(nmol_gdrysoil_hr),        #but we keep substrate.y in to track which curve was used
+              list(name = mean))   
+
+#rows of the matrix should be equal to # of enzymes used (8 for kay 7 for keenan)*(# of samples)
+setwd("~/Desktop/enzymes/enzymes_2022/end_ND/combined_output") 
+write.xlsx(enzyme_avg, "enzymes_combined.xlsx")
+```
